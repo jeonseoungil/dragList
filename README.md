@@ -1,0 +1,134 @@
+#리엑트에서 드래그 앤 드롭 기능 구현하기 
+
+구조 : leftlist , RightList 두 개의 리스트
+기능 :
+1) 각 각의 리스트에 항목을 드래그를 이용하여 위치 이동 
+2) 두 개의 리스트 안에 항목을 드래그를 이용해 다른 리스트로 이동
+
+메인 Menu.jsx 컨포넌트 구조 
+
+
+import { useEffect, useRef, useState } from "react";
+import "./style.css"
+
+
+const list1 = [
+  {content:"계획 수립"},
+  { content:"디자인 모델링"},
+  { content:"기능 체크 및 테스트 코드 작성 "},
+  { content:"구현"},
+  { content:"테스트 및 버그 확인"},
+  { content:"배포"},
+]
+const list2 = [
+  { content:"클라이언트 컨택"},
+  { content:"기능 및 디자인 설계"},
+  {content:"컨펌"},
+  { content:"구현 후 컨텍"},
+  { content:"수정"},
+  { content:"배포"},
+]
+const Menu = () => {
+  const [leftList, setLeftList] = useState(list1);
+  const [rightList, setRightList] = useState(list2);
+  const [leftToggle, setLeftToggle] = useState(false);
+  const [rightToggle, setRightToggle] = useState(false);
+  const [deleteButton, setDeleteButton] = useState(false);
+
+
+  const dragItem = useRef(null);
+
+  const onDragStart = (e, index, listType) => {
+    dragItem.current = { index, listType };
+    if (listType === "leftList") {
+        setLeftToggle(true);
+      } else {
+        setRightToggle(true);
+      }
+    e.target.classList.add("active");
+  };
+
+  const onDragEnter = (e, index, listType) => {
+    const sourceList = dragItem.current.listType === "leftList" ? leftList : rightList;
+
+    // 리스트 간 이동
+    if (dragItem.current.listType !== listType) {
+      const copySourceList = [...sourceList];
+      const [draggedItem] = copySourceList.splice(dragItem.current.index, 1);
+
+      const targetList = listType === "leftList" ? setLeftList : setRightList;
+
+      targetList((prevList) => {
+        const copyTargetList = [...prevList];
+        copyTargetList.splice(index, 0, draggedItem);
+        return copyTargetList;
+      });
+
+      // 이동한 항목이 원래 리스트에서 제거됨
+      dragItem.current.listType === "leftList"
+        ? setLeftList(copySourceList)
+        : setRightList(copySourceList);
+    } else if (dragItem.current.listType === listType) {
+      // 리스트 내에서의 이동
+      const copySourceList = [...sourceList];
+      const [draggedItem] = copySourceList.splice(dragItem.current.index, 1);
+      copySourceList.splice(index, 0, draggedItem);
+
+      if (dragItem.current.listType === "leftList") {
+        setLeftList(copySourceList);
+      } else {
+        setRightList(copySourceList);
+      }
+    }
+
+    dragItem.current.index = index;
+    dragItem.current.listType = listType;
+  };
+
+  const onDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const onDragEnd = (e) => {
+    setLeftToggle(false)
+    setRightToggle(false)
+    e.target.classList.remove("active");
+  };
+
+  return (
+    <>
+      <ul className={`column left-column ${leftToggle ? 'active' : ''}`}>
+        <h2>Left List</h2>
+        {leftList.map((item, index) => (
+          <li
+            key={index}
+            draggable
+            onDragStart={(e) => onDragStart(e, index, "leftList")}
+            onDragEnter={(e) => onDragEnter(e, index, "leftList")}
+            onDragOver={onDragOver}
+            onDragEnd={onDragEnd}
+          >
+            {item.content}
+          </li>
+        ))}
+      </ul>
+      <ul className={`column right-column ${rightToggle ? 'active' : ''}`}>
+      <h2>Right List</h2>
+        {rightList.map((item, index) => (
+          <li
+            key={index}
+            draggable
+            onDragStart={(e) => onDragStart(e, index, "rightList")}
+            onDragEnter={(e) => onDragEnter(e, index, "rightList")}
+            onDragOver={onDragOver}
+            onDragEnd={onDragEnd}
+          >
+            {item.content}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+};
+
+export default Menu;
